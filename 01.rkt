@@ -7,72 +7,41 @@
 
 (module+ test
   (define test-nums
-    (list 1721
-          979
-          366
-          299
-          675
-          1456)))
+    (list 1721 979 366 299 675 1456)))
 
-(define (in-tails a-list)
-  (make-do-sequence
-    (lambda ()
-      (values cdr cdr a-list #f #f (lambda (pos val) (not (null? val)))))))
-
-(module+ test
-  (check-equal? (sequence->list (in-tails '(1))) '(()))
-  (check-equal? (sequence->list (in-tails '(1 2 3 4)))
-                (list '(2 3 4) '(3 4) '(4) '())))
-
-(define (find-pairs-1 nums)
-  (let ([nums (sort nums <)])
-    (for/first ([a (in-list nums)]
-                [d (in-tails nums)]
-                #:when (member (- 2020 a) d))
-      (* a (- 2020 a)))))
+(define (find-summands nums sum count)
+  (cond
+    [(and (zero? count) (zero? sum))           null]
+    [(or (zero? count) (<= sum 0) (null? nums)) #f]
+    [else
+      (define hd (car nums))
+      (define new-sum (- sum hd))
+      (define summands (find-summands (cdr nums) new-sum (sub1 count)))
+      (if summands
+          (cons hd summands)
+          (find-summands (cdr nums) sum count))]))
 
 (module+ test
-  (check-equal? (find-pairs-1 test-nums) 514579))
+  (check-equal? (find-summands (sort test-nums >) 2020 2) '(1721 299))
+  (check-equal? (find-summands (sort test-nums >) 2020 3) '(979 675 366)))
+
+(define (find-pair nums)
+  (define summands (find-summands (sort nums >) 2020 2))
+  (and summands (apply * summands)))
+
+(define (find-triple nums)
+  (define summands (find-summands (sort nums >) 2020 3))
+  (and summands (apply * summands)))
+
+(module+ test
+  (check-equal? (find-pair test-nums) 514579)
+  (check-equal? (find-triple test-nums) 241861950))
 
 (module* part-1 #f
   (require racket/file)
-  (find-pairs-1 (file->list "inputs/01.txt")))
-
-(define (find-min-index nums v i)
-  (for/first ([j (in-naturals i)] [n (in-vector nums i)] #:when (< n v)) j))
-
-(module+ test
-  (check-equal? (find-min-index '#(10 9 8 7 6 5) 7 0) 4)
-  (check-equal? (find-min-index '#(20 10 9 8 7 6 5) 15 0) 1)
-  (check-equal? (find-min-index '#(20 10 9 8 7 6 5) 7 3) 5)
-  (check-equal? (find-min-index '#(100 20 10) 5 0) #f))
-
-(define (vector-member? vec i v)
-  (for/or ([e (in-vector vec i)]) (equal? e v)))
-
-(define (find-pairs nums i s)
-  (for/first ([a (in-vector nums i)]
-              [j (in-naturals i)]
-              #:when (vector-member? nums j (- s a)))
-    (* a (- s a))))
-
-(module+ test
-  (check-equal? (find-pairs '#(1721 1456 979 675 366 299) 0 2020) 514579))
-
-(define (find-triples nums)
-  (let ([nums (list->vector (sort nums >))])
-    (let/ec return
-      (for ([i (in-naturals)]
-            [a (in-vector nums)])
-        (define s (- 2020 a))
-        (define j (find-min-index nums s i))
-        (when j
-          (define b (find-pairs nums j s))
-          (when b (return (* a b))))))))
-
-(module+ test
-  (check-equal? (find-triples test-nums) 241861950))
+  (find-pair (file->list "inputs/01.txt")))
 
 (module* part-2 #f
   (require racket/file)
-  (find-triples (file->list "inputs/01.txt")))
+  (find-triple (file->list "inputs/01.txt")))
+
