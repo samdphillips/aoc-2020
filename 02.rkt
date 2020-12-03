@@ -39,7 +39,7 @@
                       (policy-check (policy 1 3 #\b) "cdefg")
                       (policy-check (policy 2 9 #\c) "ccccccccc"))))
 
-(define/memo (policy->check-proc a-policy)
+(define/memo (policy->check-proc/1 a-policy)
   (match-define (policy minv maxv the-char) a-policy)
   (define (the-char=? ch)
     (char=? the-char ch))
@@ -65,19 +65,40 @@
     (<minv (string->list s) 0)))
 
 (module+ test
-  (check-true  ((policy->check-proc (policy 1 3 #\a)) "abcde"))
-  (check-false ((policy->check-proc (policy 1 3 #\b)) "cdefg"))
-  (check-true  ((policy->check-proc (policy 2 9 #\c)) "ccccccccc")))
+  (check-true  ((policy->check-proc/1 (policy 1 3 #\a)) "abcde"))
+  (check-false ((policy->check-proc/1 (policy 1 3 #\b)) "cdefg"))
+  (check-true  ((policy->check-proc/1 (policy 2 9 #\c)) "ccccccccc")))
 
-(define (check-password a-policy-check)
+(define (check-password a-policy-check make-check)
   (define valid-password?
-    (policy->check-proc (policy-check-policy a-policy-check)))
+    (make-check (policy-check-policy a-policy-check)))
   (valid-password? (policy-check-password a-policy-check)))
 
 (module* part-1 #f
   (call-with-input-file "inputs/02.txt"
     (lambda (inp)
       (for/sum ([p (in-port read-policy-checks inp)])
-        (if (check-password p) 1 0)))))
+        (if (check-password p policy->check-proc/1) 1 0)))))
 
+(define/memo (policy->check-proc/2 a-policy)
+  (match-define (policy i j the-char) a-policy)
+  ;; 1 indexed
+  (define (check-the-char? s i)
+    (char=? the-char (string-ref s (sub1 i))))
+  (lambda (s)
+    (match* {(check-the-char? s i) (check-the-char? s j)}
+      [{#t #t} #f]
+      [{#t _ } #t]
+      [{_  #t} #t]
+      [{_  _ } #f])))
 
+(module+ test
+  (check-true  ((policy->check-proc/2 (policy 1 3 #\a)) "abcde"))
+  (check-false ((policy->check-proc/2 (policy 1 3 #\b)) "cdefg"))
+  (check-false ((policy->check-proc/2 (policy 2 9 #\c)) "ccccccccc")))
+
+(module* part-2 #f
+  (call-with-input-file "inputs/02.txt"
+    (lambda (inp)
+      (for/sum ([p (in-port read-policy-checks inp)])
+        (if (check-password p policy->check-proc/2) 1 0)))))
