@@ -95,9 +95,22 @@ MAP
   (do-count 0 0 0))
 
 (module+ test
-  (check-equal? (count-trees test-map 3 1) 7))
+  (check-equal? (count-trees test-map 1 1) 2)
+  (check-equal? (count-trees test-map 3 1) 7)
+  (check-equal? (count-trees test-map 5 1) 3)
+  (check-equal? (count-trees test-map 7 1) 4)
+  (check-equal? (count-trees test-map 1 2) 2))
 
 (module* part-1 #f
   (count-trees (call-with-input-file "inputs/03.txt" toboggan-map-load)
                3 1))
+
+(module* part-2 #f
+  (define the-map
+    (call-with-input-file "inputs/03.txt" toboggan-map-load))
+  (* (count-trees the-map 1 1)
+     (count-trees the-map 3 1)
+     (count-trees the-map 5 1)
+     (count-trees the-map 7 1)
+     (count-trees the-map 1 2)))
 
