@@ -24,3 +24,11 @@
       (for/fold ([v 0]) ([seat (in-lines inp)])
         (max v (decode-seat-id seat))))))
 
+(module* part-2 #f
+  (require racket/port
+           data/integer-set)
+
+  (call-with-input-file "inputs/05.txt"
+    (lambda (inp)
+      (for/fold ([s (make-integer-set null)]) ([seat (in-lines inp)])
+        (union s (make-range (decode-seat-id seat)))))))
